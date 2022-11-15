@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 
-	"idea/students/internal/entity"
+	"idea/students/internal/model"
 	"idea/students/internal/repository"
 
 	"github.com/labstack/echo/v4"
@@ -25,28 +25,24 @@ func ProvideStudentController(username, password string) (*StudentController, er
 
 func (receiver *StudentController) CreateStudent(ctx echo.Context) error {
 
-	var student entity.StudentRequestForm
+	var student model.StudentRequestForm
 	if err := ctx.Bind(&student); err != nil {
 		return err
 	}
 
-	id, err := receiver.Repo.CreateStudent(student)
-	if err != nil {
-		return err
+	studentModel := model.StudentModel{StudentRequestForm: student}
+	if err := receiver.Repo.CreateStudent(&studentModel); err != nil {
+		return errorHandler(ctx, err)
 	}
 
-	response := entity.StudentResponseForm{
-		Id:          id,
-		StudentInfo: student,
-	}
-	return ctx.JSON(http.StatusCreated, response)
+	return ctx.JSON(http.StatusCreated, studentModel)
 }
 
 func (receiver *StudentController) GetAllStudents(ctx echo.Context) error {
 
-	students, err := receiver.Repo.ReadAllStudents()
-	if err != nil {
-		return err
+	var students []model.StudentModel
+	if err := receiver.Repo.ReadAllStudents(&students); err != nil {
+		return errorHandler(ctx, err)
 	}
 
 	return ctx.JSON(http.StatusOK, students)
@@ -55,15 +51,14 @@ func (receiver *StudentController) GetStudent(ctx echo.Context) error {
 
 	id, err := readId(ctx)
 	if err != nil {
-		return err
+		return errorHandler(ctx, err)
 	}
 
-	student, err := receiver.Repo.ReadStudentById(int64(id))
+	var student model.StudentModel
+	err = receiver.Repo.ReadStudentById(&student, id)
 	if err != nil {
-		//return ctx.String(http.StatusNotFound, fmt.Sprintf("Could not find student record of id: %q\n", id))
-		return err
+		return errorHandler(ctx, err)
 	}
-
 	return ctx.JSON(http.StatusOK, student)
 }
 
@@ -71,23 +66,20 @@ func (receiver *StudentController) ChangeStudent(ctx echo.Context) error {
 
 	id, err := readId(ctx)
 	if err != nil {
-		return err
+		return errorHandler(ctx, err)
 	}
 
-	var student entity.StudentRequestForm
+	var student model.StudentRequestForm
 	if err := ctx.Bind(&student); err != nil {
 		return err
 	}
 
-	if err := receiver.Repo.UpdateStudentById(id, student); err != nil {
-		return err
+	studentModel := model.StudentModel{StudentRequestForm: student}
+	if err := receiver.Repo.UpdateStudentById(&studentModel, id); err != nil {
+		return errorHandler(ctx, err)
 	}
 
-	response := entity.StudentResponseForm{
-		Id:          id,
-		StudentInfo: student,
-	}
-	return ctx.JSON(http.StatusOK, response)
+	return ctx.JSON(http.StatusOK, studentModel)
 }
 
 func (receiver *StudentController) DeleteStudent(ctx echo.Context) error {
@@ -100,11 +92,11 @@ func (receiver *StudentController) DeleteStudent(ctx echo.Context) error {
 	if err := receiver.Repo.DeleteStudentById(id); err != nil {
 		return errorHandler(ctx, err)
 	}
+
 	return ctx.NoContent(http.StatusOK)
 }
 
-// helper functions
-// reads an id of type int64 from Path Parameter
+// Reads an id of type int64 from Path Parameter
 func readId(ctx echo.Context) (int64, error) {
 
 	param := ctx.Param("id")
@@ -116,13 +108,27 @@ func readId(ctx echo.Context) (int64, error) {
 }
 func errorHandler(ctx echo.Context, err error) error {
 
-	switch err {
-	case strconv.ErrSyntax:
-		return ctx.String(http.StatusBadRequest, "Invalid Parameter Syntax.")
-	case sql.ErrNoRows:
-		return ctx.String(http.StatusBadRequest, "No record found.")
-	default:
+	switch Err := err.(type) {
 
-		return err
+	case *strconv.NumError:
+		switch Err.Unwrap().Error() {
+
+		case strconv.ErrSyntax.Error():
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("Invalid Parameter Syntax for Id! Received Id: %v\n", Err.Num))
+		case strconv.ErrRange.Error():
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("Id out of range! Received Id: %v\n", Err.Num))
+		default:
+			return Err
+		}
+
+	default:
+		switch err {
+
+		case repository.ErrRecordNotFound:
+			return ctx.String(http.StatusBadRequest, "No record found.\n")
+		default:
+			return err
+		}
+
 	}
 }

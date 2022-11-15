@@ -1,8 +1,8 @@
-package entity
+package model
 
-type StudentResponseForm struct {
-	Id          int64 `json:"id" xml:"id"`
-	StudentInfo StudentRequestForm
+type StudentModel struct {
+	Id int64 `gorm:"primarykey" json:"id" xml:"id"`
+	StudentRequestForm
 }
 
 type StudentRequestForm struct {
