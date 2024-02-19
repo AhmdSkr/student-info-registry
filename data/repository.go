@@ -1,8 +1,7 @@
-package repository
+package data
 
 import (
 	"fmt"
-	"idea/students/internal/model"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -33,30 +32,30 @@ func ProvideStudentRepository(username, password string) (*StudentRepository, er
 	if err != nil {
 		return nil, err
 	}
-	db.AutoMigrate(&model.StudentModel{})
+	db.AutoMigrate(&StudentModel{})
 	return &StudentRepository{Source: db}, nil
 }
 
-func (receiver *StudentRepository) CreateStudent(student *model.StudentModel) error {
+func (receiver *StudentRepository) CreateStudent(student *StudentModel) error {
 	return receiver.Source.Create(&student).Error
 }
-func (receiver *StudentRepository) ReadAllStudents(students *[]model.StudentModel) error {
+func (receiver *StudentRepository) ReadAllStudents(students *[]StudentModel) error {
 	return receiver.Source.Find(students).Error
 }
-func (receiver *StudentRepository) ReadStudentById(student *model.StudentModel, id int64) error {
+func (receiver *StudentRepository) ReadStudentById(student *StudentModel, id int64) error {
 	student.Id = id
 	return receiver.Source.First(student).Error
 }
-func (receiver *StudentRepository) UpdateStudentById(student *model.StudentModel, id int64) error {
+func (receiver *StudentRepository) UpdateStudentById(student *StudentModel, id int64) error {
 	student.Id = id
-	if err := receiver.ReadStudentById(&model.StudentModel{}, id); err != nil {
+	if err := receiver.ReadStudentById(&StudentModel{}, id); err != nil {
 		return err
 	}
 	return receiver.Source.Save(student).Error
 }
 func (receiver *StudentRepository) DeleteStudentById(id int64) error {
-	if err := receiver.ReadStudentById(&model.StudentModel{}, id); err != nil {
+	if err := receiver.ReadStudentById(&StudentModel{}, id); err != nil {
 		return err
 	}
-	return receiver.Source.Delete(&model.StudentModel{}, id).Error
+	return receiver.Source.Delete(&StudentModel{}, id).Error
 }

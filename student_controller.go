@@ -1,22 +1,20 @@
-package controller
+package main
 
 import (
 	"fmt"
+	"idea/students/data"
 	"net/http"
 	"strconv"
-
-	"idea/students/internal/model"
-	"idea/students/internal/repository"
 
 	"github.com/labstack/echo/v4"
 )
 
 type StudentController struct {
-	Repo *repository.StudentRepository
+	Repo *data.StudentRepository
 }
 
 func ProvideStudentController(username, password string) (*StudentController, error) {
-	repo, err := repository.ProvideStudentRepository(username, password)
+	repo, err := data.ProvideStudentRepository(username, password)
 	if err != nil {
 		return nil, err
 	}
@@ -25,12 +23,12 @@ func ProvideStudentController(username, password string) (*StudentController, er
 
 func (receiver *StudentController) CreateStudent(ctx echo.Context) error {
 
-	var student model.StudentRequestForm
+	var student data.StudentRequestForm
 	if err := ctx.Bind(&student); err != nil {
 		return err
 	}
 
-	studentModel := model.StudentModel{StudentRequestForm: student}
+	studentModel := data.StudentModel{StudentRequestForm: student}
 	if err := receiver.Repo.CreateStudent(&studentModel); err != nil {
 		return errorHandler(ctx, err)
 	}
@@ -40,7 +38,7 @@ func (receiver *StudentController) CreateStudent(ctx echo.Context) error {
 
 func (receiver *StudentController) GetAllStudents(ctx echo.Context) error {
 
-	var students []model.StudentModel
+	var students []data.StudentModel
 	if err := receiver.Repo.ReadAllStudents(&students); err != nil {
 		return errorHandler(ctx, err)
 	}
@@ -54,7 +52,7 @@ func (receiver *StudentController) GetStudent(ctx echo.Context) error {
 		return errorHandler(ctx, err)
 	}
 
-	var student model.StudentModel
+	var student data.StudentModel
 	err = receiver.Repo.ReadStudentById(&student, id)
 	if err != nil {
 		return errorHandler(ctx, err)
@@ -69,12 +67,12 @@ func (receiver *StudentController) ChangeStudent(ctx echo.Context) error {
 		return errorHandler(ctx, err)
 	}
 
-	var student model.StudentRequestForm
+	var student data.StudentRequestForm
 	if err := ctx.Bind(&student); err != nil {
 		return err
 	}
 
-	studentModel := model.StudentModel{StudentRequestForm: student}
+	studentModel := data.StudentModel{StudentRequestForm: student}
 	if err := receiver.Repo.UpdateStudentById(&studentModel, id); err != nil {
 		return errorHandler(ctx, err)
 	}
@@ -124,7 +122,7 @@ func errorHandler(ctx echo.Context, err error) error {
 	default:
 		switch err {
 
-		case repository.ErrRecordNotFound:
+		case data.ErrRecordNotFound:
 			return ctx.String(http.StatusBadRequest, "No record found.\n")
 		default:
 			return err

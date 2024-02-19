@@ -3,8 +3,6 @@ package main
 import (
 	"log"
 
-	"idea/students/internal/controller"
-
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -15,7 +13,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	ctrl, err := controller.ProvideStudentController("api.user", "1-1-15@A")
+	ctrl, err := ProvideStudentController("api.user", "1-1-15@A")
 	if err != nil {
 		log.Fatal(err)
 	}
