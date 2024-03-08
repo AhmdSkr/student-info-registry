@@ -2,6 +2,7 @@ package student
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 
 	"github.com/go-sql-driver/mysql"
@@ -46,6 +47,10 @@ const (
 )
 
 var source *sql.DB
+
+var (
+	ErrNoSuchEntity error = errors.New("student: no such entity was found")
+)
 
 func init() {
 
@@ -171,7 +176,9 @@ func Read(id int64) (*Entity, error) {
 		&entity.Firstname, &entity.Middlename, &entity.Lastname,
 		&entity.BirthDate, &entity.Gender,
 		&entity.Phone, &entity.Address, &entity.Country,
-	); err != nil {
+	); errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNoSuchEntity
+	} else if err != nil {
 		return nil, err
 	}
 

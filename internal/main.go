@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -87,7 +88,9 @@ func Read(ctx echo.Context) error {
 	}
 
 	// fetching student entity from database
-	if entity, err = student.Read(id); err != nil {
+	if entity, err = student.Read(id); errors.Is(err, student.ErrNoSuchEntity) {
+		return echo.NewHTTPError(http.StatusNotFound, err)
+	} else if err != nil {
 		return err
 	}
 

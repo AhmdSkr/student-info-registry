@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS students (
     MiddleName	VARCHAR(60), 
     LastName	VARCHAR(60)     NOT NULL, 
     BirthDate	DATE,
-    Gender		TINYINT         DEFAULT	'UNK',
+    Gender		TINYINT         DEFAULT	0, -- to be changed to String Enum
     Phone		VARCHAR(15),
     Address		VARCHAR(200),
     Country		CHAR(3)
